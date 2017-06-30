@@ -1,0 +1,251 @@
+<script src="../bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+<link rel="import" href="../bower_components/google-map/google-map.html">
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-card/paper-card.html">
+<link rel="import" href="../bower_components/google-map/google-map-poly.html">
+<link rel="import" href="../bower_components/google-map/google-map-point.html">
+<link rel="import" href="../bower_components/geo-location/geo-location.html">
+<!--<link rel="import" href="../bower_components/google-apis/google-maps-api.html">-->
+<!--element can be reused using reference to map-element.html custom element inside my-elements folder -->
+
+<dom-module id="map-element">
+  <template >
+    <style>
+      google-map{
+        height: 90%;
+        }
+      /*paper-card{
+        top:10px;
+        left:10px;
+        } */
+    </style>
+
+    <!-- geo-location returns the current location in lat and lng (accuracy is also returned) -->
+    <!-- whenever location gets updated _onGeoResponse is called -->
+
+    <geo-location watch-pos high-accuracy latitude="{{lat}}" longitude="{{lng}}" on-geo-response="_onGeoResponse">
+    </geo-location>
+
+    <!-- google-map loads the map with co-ordinates lat and lng returned by geo-location -->
+
+    <google-map map="{{mymap}}" id="mymapid"  latitude="[[lat]]" longitude="[[lng]]"
+    api-key="AIzaSyB8YtSJMz0LWiV3un9QXxXbbRp1sKDQg74" fit-to-marker  zoom="15" draggable="true" >
+
+          <!-- a draggable marker is created -->
+          <!-- whenever it is dragged,position is returned in lat_marker and lng_marker-->
+
+          <google-map-marker latitude="{{lat_marker}}" longitude="{{lng_marker}}"
+            title="You are here" draggable="true">
+          </google-map-marker>
+
+          <!-- fixed marker showing the geo-location -->
+
+          <google-map-marker latitude="{{lat}}" longitude="{{lng}}"
+             title="geo location here" icon="../my-elements/pin.png" draggable="false">
+          </google-map-marker>
+
+    </google-map>
+    <!--
+    //used for testing the coordinates//
+    <paper-card elevation="2">
+      current-latitude:{{lat}}   changed-latitude:{{lat_marker}} last-latitude:{{lat_last}}
+      <br>current-longitude:{{lng}}  changed-longitude:{{lng_marker}} last-longitude:{{lng_last}}
+    </paper-card>
+    -->
+  </template>
+
+
+<script>
+  Polymer({
+    is:"map-element",
+    properties: {
+
+      //lat and lng are for geo-location
+
+      lat: {
+        type:Number,
+        value:0
+      },
+
+      lng: {
+        type:Number,
+        value:0
+      },
+
+      //accuracy is returned by geo-location
+      //it is used for showing the radius of accuracy
+
+      accuracy: {
+        type:Number,
+        value: 0
+      },
+
+      //lat_marker and lng_marker are used for google_map_marker
+
+      lat_marker: {
+        type:Number,
+        value:0
+      },
+
+      lng_marker: {
+        type:Number,
+        value:0
+      },
+
+      //api is used for google-maps-api
+
+      api:
+      {
+        type:Object
+      },
+
+      //oldcircle is an object for old circle created
+
+      oldcircle:
+      {
+        type:Object
+      },
+
+      //lat_last and lng_last store the previous location of marker
+
+      lat_last:
+      {
+        type:Number
+      },
+      lng_last:
+      {
+        type:Number
+      }
+    },
+
+    observers:
+    [
+      '_drawCircle(lat,lng,accuracy)',
+      '_onDragChange(lat_marker,lng_marker)'
+    ],
+
+    //whenever lat/lng/accuracy changes a new circle will be drawn
+    //and previous circle will be erased
+
+    _drawCircle: function(lat,lng,accuracy){
+      if(lat&&lng&&accuracy)
+      {
+          //conversion to LatLng type
+          var latitude_circle=parseFloat(this.lat);
+          var longitude_circle=parseFloat(this.lng);
+
+          //this will be the center of the circle
+          center_test={lat:latitude_circle,lng:longitude_circle};
+
+          //update to the latest circle and erase previous one
+
+          if(this.oldcircle)
+          {
+            try
+            {
+              oldcircle.setMap(null);
+              console.log("Old circle erased");
+            }
+            catch (e)
+            {
+              console.log(e);
+              //console.log("Old circle not found");
+            }
+          }
+          //draw a new circle
+
+          try
+          {
+               oldcircle=new google.maps.Circle({
+               strokeColor: '#008000',
+               strokeOpacity: 0.1,
+               strokeWeight: 1,
+               fillColor: '#ADFF2F',
+               fillOpacity: 0.4,
+               map: document.querySelector('#mymapid').map,
+               center:center_test,
+               radius: accuracy
+             });
+           }
+           catch(err)
+           {
+             console.log(err);
+           }
+         }
+        },
+
+
+    //whenever marker is dragged this function is called
+
+    _onDragChange: function()
+    {
+      //waits for 100 milliseconds and then _onDragChangeDebounced is called
+      this.debounce("dragchange", this._onDragChangeDebounced, 100);
+    },
+
+    //main function for handling dragging of marker
+
+    _onDragChangeDebounced:function()
+    {
+      //console.log("marker dragged");
+      //validDrag checks whether a drag is inside or outside the circle
+      //only inside drags are to be allowed
+      //dragging outside should replace the marker to previous position
+
+      var validDrag =google.maps.geometry.spherical.computeDistanceBetween(
+            new google.maps.LatLng( this.lat, this.lng ),
+            new google.maps.LatLng( this.lat_marker, this.lng_marker )
+          ) <= this.accuracy;
+
+          //if dragged outside the circle
+
+          if(validDrag==false)
+         {
+           //console.log("[1] dragged outside the radius: center: ", this.lat, this.lng, "Last: ", this.lat_last, this.lng_last, "Outside: ", this.lat_marker, this.lng_marker);
+
+            if (this.lat_last && this.lng_last)
+            {
+                //console.log("[1] last available");
+                this.lat_marker=this.lat_last;
+                this.lng_marker=this.lng_last;
+            }
+            else
+            {
+                this.lat_marker=this.lat;
+                //console.log("[1] last not available: ");
+                this.lng_marker=this.lng;
+            }
+
+            //console.log("[1] <<lat_marker:",this.lat_marker,"long_marker:",this.lng_marker);
+
+            this.fire("pointer-moved-outside");
+          }
+
+        //if dragged inside the circle
+
+        else
+        {
+          this.lat_last = this.lat_marker;
+          this.lng_last = this.lng_marker;
+          //console.log("[1] dragged inside the radius. setting last.");
+          //console.log("[1] <<lat_marker:",this.lat_marker,"long_marker:",this.lng_marker);
+        }
+      },
+
+    //updates all values whenever geo-location gets updated
+
+    _onGeoResponse: function(p)
+    {
+        //console.log(">> GeoLocation: ", p.detail);
+        this.lat=p.detail.position.coords.latitude;
+        this.lng=p.detail.position.coords.longitude;
+        this.accuracy=p.detail.position.coords.accuracy;
+        this.lat_marker = this.lat;
+        this.lng_marker = this.lng;
+        this.lat_last = this.lat_marker;
+        this.lng_last = this.lng_marker;
+    }
+});
+</script>
+
+</dom-module>

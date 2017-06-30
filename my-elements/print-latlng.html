@@ -1,0 +1,33 @@
+<script src="../bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+<link rel="import" href="bower_components/paper-card/paper-card.html">
+<dom-module id="print-latlng">
+  <template>
+    <style>
+    paper-card{
+      position: absolute;
+      bottom: 25px;
+      left: 25px;
+      z-index: 1;
+    }
+    </style>
+    <paper-card elevation="2">
+      latitude:{{lat}}
+      longitude:{{long}}
+    </paper-card>
+  </template>
+  <script>
+  Polymer({
+   is:"print-latlng";
+   properties:{
+      lat:{
+        type:Number,
+        value:null;
+      },
+      long:{
+        type: Number,
+        value:null;
+      }
+   }
+  })
+  </script>
+</dom-module>

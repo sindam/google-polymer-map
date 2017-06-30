@@ -1,0 +1,12 @@
+{
+  "name": "maps-elements",
+  "description": "",
+  "main": "index.html",
+  "license": "MIT",
+  "homepage": "index.html",
+  "dependencies": {
+    "iron-elements": "PolymerElements/iron-elements#^1.0.0",
+  "paper-elements": "PolymerElements/paper-elements#^1.0.1",
+  "google-map": "GoogleWebComponents/google-map#^1.1.3"
+  }
+}
