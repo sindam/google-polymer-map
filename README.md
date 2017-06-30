@@ -16,7 +16,7 @@
 
 ### Clone directly from Github
 ```
-  git clone https://github.com/sindam/google-polymer-maps.git
+  git clone https://github.com/sindam/google-polymer-map.git
 ```
 ### Running the server
 ```
